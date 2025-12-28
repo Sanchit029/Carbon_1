@@ -1,30 +1,13 @@
-/**
- * Event Processing Pipeline
- * 
- * Orchestrates the complete flow:
- * 1. Store raw event
- * 2. Normalize it
- * 3. Check for duplicates
- * 4. Validate
- * 5. Store processed event
- * 6. Record idempotency
- * 
- * Partial failure handling:
- * - If validation fails: record in failed_events, return error
- * - If storage fails: transaction rollback, return 500
- * - If idempotency recording fails: still considered successful
- *   (the processed_event was stored, so data is not lost)
- */
-
 const { getDb } = require('./database');
 const { normalizeEvent } = require('./normalization');
 const { generateIdempotencyKey, checkDuplicate, recordProcessing } = require('./deduplication');
 
+// main function that processes incoming events
 const processEvent = async (rawEvent, simulateFailure = false) => {
   const db = getDb();
   
   try {
-    // Step 1: Store raw event
+    // first save the raw event as-is
     const rawEventId = await new Promise((resolve, reject) => {
       db.run(
         'INSERT INTO raw_events (raw_data, source, processing_status) VALUES (?, ?, ?)',
@@ -36,7 +19,7 @@ const processEvent = async (rawEvent, simulateFailure = false) => {
       );
     });
     
-    // Step 2: Normalize
+    // now try to normalize it
     const normalizationResult = normalizeEvent(rawEvent);
     if (!normalizationResult.success) {
       // Store failure
@@ -72,10 +55,10 @@ const processEvent = async (rawEvent, simulateFailure = false) => {
     
     const normalizedEvent = normalizationResult.data;
     
-    // Step 3: Generate idempotency key
+    // make a unique key for this event
     const idempotencyKey = generateIdempotencyKey(normalizedEvent);
     
-    // Step 4: Check for duplicates
+    // check if we already processed this
     const duplicateCheck = await checkDuplicate(idempotencyKey);
     if (duplicateCheck.isDuplicate) {
       // Mark raw event as duplicate
@@ -99,12 +82,12 @@ const processEvent = async (rawEvent, simulateFailure = false) => {
       };
     }
     
-    // Step 5: Simulate database failure if requested
+    // simulate failure if requested (for testing)
     if (simulateFailure) {
       throw new Error('Simulated database failure during write');
     }
     
-    // Step 6: Store processed event (atomic operation)
+    // save the processed event
     const processedEventId = await new Promise((resolve, reject) => {
       db.run(
         `INSERT INTO processed_events 

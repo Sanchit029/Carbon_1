@@ -1,31 +1,10 @@
-/**
- * Deduplication & Idempotency Layer
- * 
- * Challenge: No guaranteed unique event ID, unreliable timestamps
- * Solution: Generate idempotency key from content hash + client_id + timestamp
- * 
- * This approach:
- * - Uses a combination of content hash and metadata to detect duplicates
- * - Doesn't rely on fragile event IDs from clients
- * - Handles retries safely: same request = same idempotency key = no reprocessing
- * 
- * Trade-off: Very similar events from same client may collide (acceptable since
- * we can't reliably distinguish them without unique IDs anyway)
- */
-
 const crypto = require('crypto');
 const { getDb } = require('./database');
 
-/**
- * Generate idempotency key from normalized event
- * Combines: client_id + content_hash + timestamp (minute precision)
- * 
- * This ensures:
- * - Same event retried = same key (idempotent)
- * - Different events = different keys (unless exact duplicates)
- */
+// generate unique key for each event to detect duplicates
+// using hash of the content so same event = same key
 const generateIdempotencyKey = (normalizedEvent) => {
-  // Include critical fields in hash
+  // create hash from important fields
   const contentHash = crypto
     .createHash('sha256')
     .update(
@@ -38,20 +17,14 @@ const generateIdempotencyKey = (normalizedEvent) => {
     .digest('hex')
     .substring(0, 16);
   
-  // Parse timestamp to minute precision (handles slight variations)
+  // round timestamp to minute so small time differences don't matter
   const timestamp = new Date(normalizedEvent.timestamp);
-  const timeKey = Math.floor(timestamp.getTime() / 60000); // Round to minute
+  const timeKey = Math.floor(timestamp.getTime() / 60000);
   
   return `${normalizedEvent.client_id}-${timeKey}-${contentHash}`;
 };
 
-/**
- * Check if event already processed
- * 
- * Returns:
- * - { isDuplicate: false } - Safe to process
- * - { isDuplicate: true, processedEventId } - Already processed, skip
- */
+// check if we already processed this event
 const checkDuplicate = (idempotencyKey) => {
   return new Promise((resolve, reject) => {
     const db = getDb();
@@ -66,12 +39,7 @@ const checkDuplicate = (idempotencyKey) => {
   });
 };
 
-/**
- * Record successful processing to idempotency table
- * 
- * This is the critical step that makes retries safe.
- * Even if the response is lost, the record exists and prevents reprocessing.
- */
+// save to idempotency table after successful processing
 const recordProcessing = (idempotencyKey, processedEventId) => {
   return new Promise((resolve, reject) => {
     const db = getDb();
@@ -80,7 +48,7 @@ const recordProcessing = (idempotencyKey, processedEventId) => {
       [idempotencyKey, processedEventId],
       function(err) {
         if (err) {
-          // If insert fails with UNIQUE constraint, event was already processed
+          // if UNIQUE constraint error, already processed
           if (err.message.includes('UNIQUE')) {
             resolve({ alreadyProcessed: true });
           } else {

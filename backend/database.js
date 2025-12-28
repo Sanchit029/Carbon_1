@@ -4,18 +4,11 @@ const path = require('path');
 const dbPath = path.join(__dirname, 'data.db');
 const db = new sqlite3.Database(dbPath);
 
-/**
- * Initialize database schema
- * 
- * Key tables:
- * - raw_events: Store raw incoming events for audit trail
- * - processed_events: Normalized, validated events ready for aggregation
- * - idempotency_keys: Track processed events to prevent duplicates
- */
+// initialize database tables
 const initDatabase = () => {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
-      // Raw events - audit trail of what we received
+      // store raw events as they come in
       db.run(`
         CREATE TABLE IF NOT EXISTS raw_events (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,7 +21,7 @@ const initDatabase = () => {
         if (err && !err.message.includes('already exists')) reject(err);
       });
 
-      // Processed events - canonical form
+      // normalized events after processing
       db.run(`
         CREATE TABLE IF NOT EXISTS processed_events (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,7 +38,7 @@ const initDatabase = () => {
         if (err && !err.message.includes('already exists')) reject(err);
       });
 
-      // Idempotency tracking - prevent duplicate processing
+      // track which events we already processed
       db.run(`
         CREATE TABLE IF NOT EXISTS idempotency_keys (
           idempotency_key TEXT PRIMARY KEY,

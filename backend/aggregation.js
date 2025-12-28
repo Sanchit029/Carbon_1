@@ -1,19 +1,6 @@
-/**
- * Aggregation Layer
- * 
- * Provides consistent query interface for aggregated data
- * Designed for extensibility - new aggregation types can be added easily
- * 
- * Key insight: Query only processed_events table (canonical form),
- * never from raw events. This ensures consistency.
- */
-
 const { getDb } = require('./database');
 
-/**
- * Get aggregated metrics
- * Supports filtering by client and time range
- */
+// get counts and totals grouped by client
 const getAggregation = (filters = {}) => {
   return new Promise((resolve, reject) => {
     const db = getDb();
@@ -52,9 +39,7 @@ const getAggregation = (filters = {}) => {
   });
 };
 
-/**
- * Get all processed events with optional filtering
- */
+// get list of processed events
 const getProcessedEvents = (filters = {}) => {
   return new Promise((resolve, reject) => {
     const db = getDb();
@@ -85,9 +70,7 @@ const getProcessedEvents = (filters = {}) => {
   });
 };
 
-/**
- * Get failed events
- */
+// get failed events for debugging
 const getFailedEvents = () => {
   return new Promise((resolve, reject) => {
     const db = getDb();
@@ -101,9 +84,7 @@ const getFailedEvents = () => {
   });
 };
 
-/**
- * Get summary statistics
- */
+// get summary stats for dashboard
 const getSummary = () => {
   return new Promise((resolve, reject) => {
     const db = getDb();

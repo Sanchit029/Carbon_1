@@ -510,7 +510,7 @@
     <script>
         const API_URL = 'http://localhost:3001/api';
 
-        // ============== Event Submission ==============
+        // submit event function
         async function submitEvent() {
             const input = document.getElementById('eventInput').value.trim();
             const simulateFailure = document.getElementById('simulateFailure').checked;
@@ -542,12 +542,12 @@
                     showMessage(messageDiv, `Error: ${data.error}`, 'error');
                 }
 
-                // Show response
+                // show the API response
                 const responseDiv = document.getElementById('submitResponse');
                 responseDiv.style.display = 'block';
                 document.getElementById('responseText').textContent = JSON.stringify(data, null, 2);
 
-                // Refresh data
+                // reload the stats
                 setTimeout(() => {
                     loadAggregation();
                     loadProcessedEvents();
@@ -581,9 +581,9 @@
             document.getElementById('eventInput').value = JSON.stringify(samples[client], null, 2);
         }
 
-        // ============== Tab Switching ==============
+        // switch between tabs
         function switchTab(tabName) {
-            // Hide all tabs
+            // hide all tabs first
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
             });
@@ -591,17 +591,17 @@
                 tab.classList.remove('active');
             });
 
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
+            // show the one we want
+            document.getElementById(tabName).style.display = 'block';
             event.target.classList.add('active');
 
-            // Load data for tab
+            // load the data
             if (tabName === 'aggregation') loadAggregation();
             else if (tabName === 'events') loadProcessedEvents();
             else if (tabName === 'failed') loadFailedEvents();
         }
 
-        // ============== API Calls ==============
+        // get aggregation data from API
         async function loadAggregation() {
             const clientId = document.getElementById('filterClient').value;
             const startDate = document.getElementById('filterStartDate').value;
@@ -703,7 +703,7 @@
                 stats[3].classList.remove('loading');
             } catch (err) {
                 console.error('Failed to load summary:', err);
-                // Remove loading animation even on error
+                // clear loading animation if error
                 document.querySelectorAll('.stat-value').forEach(stat => {
                     stat.classList.remove('loading');
                     if (stat.textContent === '-') stat.textContent = '0';
@@ -711,7 +711,7 @@
             }
         }
 
-        // ============== Utilities ==============
+        // helper function to show messages
         function showMessage(element, text, type) {
             element.innerHTML = `<div class="message ${type}">${text}</div>`;
             setTimeout(() => {
@@ -731,14 +731,14 @@
             loadProcessedEvents();
         }
 
-        // ============== Load on Page Start ==============
+        // load everything when page opens
         window.addEventListener('load', () => {
             loadAggregation();
             loadProcessedEvents();
             loadFailedEvents();
             refreshSummary();
 
-            // Auto-refresh every 30 seconds
+            // refresh stats every 30 seconds
             setInterval(() => {
                 if (document.getElementById('aggregation').classList.contains('active')) {
                     loadAggregation();

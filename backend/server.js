@@ -8,33 +8,17 @@ const { getAggregation, getProcessedEvents, getFailedEvents, getSummary } = requ
 const app = express();
 const PORT = 3001;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Initialize database
+// setup database
 initDatabase().catch(err => {
   console.error('Failed to initialize database:', err);
   process.exit(1);
 });
 
-/**
- * POST /api/events
- * 
- * Ingest raw events from clients
- * 
- * Body:
- * {
- *   event: { ...raw event data },
- *   simulateFailure?: boolean
- * }
- * 
- * Returns:
- * - 200: Event processed (success or duplicate)
- * - 400: Normalization failed
- * - 500: System error (database failure)
- */
+// endpoint to receive events from clients
 app.post('/api/events', async (req, res) => {
   try {
     const { event, simulateFailure } = req.body;
@@ -74,18 +58,7 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
-/**
- * GET /api/aggregate
- * 
- * Get aggregated statistics
- * 
- * Query params:
- * - clientId: Filter by client
- * - startDate: ISO date
- * - endDate: ISO date
- * 
- * Returns: Array of aggregations { client_id, count, total, average }
- */
+// get aggregated data
 app.get('/api/aggregate', async (req, res) => {
   try {
     const { clientId, startDate, endDate } = req.query;
@@ -109,16 +82,7 @@ app.get('/api/aggregate', async (req, res) => {
   }
 });
 
-/**
- * GET /api/events
- * 
- * Get processed events
- * 
- * Query params:
- * - clientId: Filter by client
- * - startDate: ISO date
- * - endDate: ISO date
- */
+// get processed events
 app.get('/api/events', async (req, res) => {
   try {
     const { clientId, startDate, endDate } = req.query;
@@ -142,11 +106,7 @@ app.get('/api/events', async (req, res) => {
   }
 });
 
-/**
- * GET /api/failed
- * 
- * Get failed events for debugging
- */
+// get failed events
 app.get('/api/failed', async (req, res) => {
   try {
     const result = await getFailedEvents();
@@ -163,11 +123,7 @@ app.get('/api/failed', async (req, res) => {
   }
 });
 
-/**
- * GET /api/summary
- * 
- * Get system summary statistics
- */
+// get system summary stats
 app.get('/api/summary', async (req, res) => {
   try {
     const result = await getSummary();
@@ -184,12 +140,6 @@ app.get('/api/summary', async (req, res) => {
   }
 });
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Frontend: http://localhost:${PORT}`);
 });

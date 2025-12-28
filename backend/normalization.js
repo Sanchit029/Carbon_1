@@ -1,20 +1,7 @@
-/**
- * Normalization Layer
- * 
- * Converts raw, inconsistent events into a canonical format.
- * Handles:
- * - Field name variations across clients
- * - Type inconsistencies (strings vs numbers)
- * - Date format normalization
- * - Missing fields with sensible defaults
- * 
- * Design Decision: Use a client-specific configuration mapping approach
- * that's easy to extend without modifying core logic
- */
-
 const Joi = require('joi');
 
-// Client-specific field mappings
+// different clients send data in different formats
+// this maps where to find each field for each client
 const clientMappings = {
   client_A: {
     clientIdField: 'source',
@@ -36,16 +23,12 @@ const clientMappings = {
   }
 };
 
-/**
- * Get nested value from object using dot notation
- */
+// helper to get nested values like "payload.metric"
 const getNestedValue = (obj, path) => {
   return path.split('.').reduce((current, prop) => current?.[prop], obj);
 };
 
-/**
- * Parse and normalize date to ISO 8601 format
- */
+// convert different date formats to standard format
 const normalizeDate = (dateValue) => {
   if (!dateValue) return null;
   
@@ -83,20 +66,18 @@ const toNumber = (value) => {
   return null;
 };
 
-/**
- * Normalize a raw event to canonical format
- */
+// convert raw event to standard format
 const normalizeEvent = (rawEvent) => {
-  // Determine client and get appropriate mapping
+  // figure out which client this is from
   const clientId = rawEvent.source || rawEvent.client || 'unknown';
   const mapping = clientMappings[clientId] || clientMappings.default;
   
   try {
-    // Extract fields using mapping
+    // get the fields we need
     const amount = toNumber(getNestedValue(rawEvent, mapping.amountField));
     const timestamp = normalizeDate(getNestedValue(rawEvent, mapping.timestampField));
     
-    // Validate required fields
+    // amount is required
     if (amount === null || amount === undefined) {
       throw new Error('Missing or invalid amount field');
     }
@@ -115,9 +96,7 @@ const normalizeEvent = (rawEvent) => {
   }
 };
 
-/**
- * Schema validation for normalized events (optional, for strict mode)
- */
+// validation schema (using Joi)
 const normalizedEventSchema = Joi.object({
   client_id: Joi.string().required(),
   metric: Joi.string().required(),
