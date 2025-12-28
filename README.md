@@ -434,7 +434,7 @@ failed_events
 
 ## Production Roadmap
 
-1. ✅ **Correct semantics** (this system)
+1.  **Correct semantics** (this system)
 2. → **PostgreSQL** (distributed, transactions)
 3. → **Redis** (cache, idempotency cache, rate limiting)
 4. → **Message Queue** (async processing, resilience)
@@ -445,11 +445,11 @@ failed_events
 ## Summary
 
 This system demonstrates:
-- ✅ Clean separation of concerns (normalization, deduplication, aggregation)
-- ✅ Robust duplicate detection without relying on fragile IDs
-- ✅ Partial failure handling with clear error cases
-- ✅ Safe retry semantics via idempotency
-- ✅ Extensible design for new clients and aggregations
-- ✅ Thoughtful trade-offs documented
+-  Clean separation of concerns (normalization, deduplication, aggregation)
+-  Robust duplicate detection without relying on fragile IDs
+-  Partial failure handling with clear error cases
+-  Safe retry semantics via idempotency
+-  Extensible design for new clients and aggregations
+-  Thoughtful trade-offs documented
 
 The implementation prioritizes **correctness** and **clarity** over performance—intentional choices that set a foundation for scaling.
